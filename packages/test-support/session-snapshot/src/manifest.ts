@@ -108,6 +108,8 @@ export interface SnapshotManifest {
   header?: SnapshotHeaderManifest
   /** Exceptional replay metadata absent for ordinary successful recordings. */
   replay?: SnapshotReplayManifest
+  /** Maximum allocated budgets for the run (filesystem/network/tool access limits, tokens/cost/time). */
+  budget?: Record<string, string | number>
   /** Optional host requirement; portable scenarios omit it. */
   platform?: SnapshotPlatform
   /** Explicit process fallback permission preset. */
@@ -216,6 +218,7 @@ export function parseSnapshotManifest(source: string, path = 'snapshot.yml'): Sn
       'recording',
       'header',
       'replay',
+      'budget',
       'platform',
       'permission',
       'environment',
@@ -288,6 +291,21 @@ export function parseSnapshotManifest(source: string, path = 'snapshot.yml'): Sn
       exactKeys(value, ['override'], 'manifest.replay')
       if (value.override !== true) throw new Error('manifest.replay.override must equal true')
       replay = { override: true }
+    }
+
+    let budget: Record<string, string | number> | undefined
+    if (root.budget !== undefined) {
+      budget = record(root.budget, 'manifest.budget') as Record<string, string | number>
+
+      if (Object.keys(budget).length === 0) {
+        throw new Error('manifest.budget must not be empty')
+      }
+
+      for (const [key, val] of Object.entries(budget)) {
+        if (typeof val !== 'number' && typeof val !== 'string') {
+          throw new Error('manifest.budget values must be numbers or strings')
+        }
+      }
     }
 
     let platform: SnapshotPlatform | undefined
@@ -417,6 +435,7 @@ export function parseSnapshotManifest(source: string, path = 'snapshot.yml'): Sn
       ...(recording === undefined ? {} : { recording }),
       ...(header === undefined ? {} : { header }),
       ...(replay === undefined ? {} : { replay }),
+      ...(budget === undefined ? {} : { budget }),
       ...(platform === undefined ? {} : { platform }),
       ...(permission === undefined ? {} : { permission }),
       ...(environment === undefined ? {} : { environment }),
