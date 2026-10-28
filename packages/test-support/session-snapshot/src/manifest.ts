@@ -301,7 +301,7 @@ export function parseSnapshotManifest(source: string, path = 'snapshot.yml'): Sn
         throw new Error('manifest.budget must not be empty')
       }
 
-      for (const [key, val] of Object.entries(budget)) {
+      for (const val of Object.values(budget)) {
         if (typeof val !== 'number' && typeof val !== 'string') {
           throw new Error('manifest.budget values must be numbers or strings')
         }
